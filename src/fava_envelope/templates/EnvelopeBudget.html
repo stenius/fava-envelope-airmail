@@ -1,15 +1,342 @@
 {# This is a Jinja template that is the page displayed when clicking the link on the sidebar. #}
 {% import "_envelope_query_table.html" as querytable with context %}
-{# TODO memst: handle the currency argument properly #}
+
+<style>
+  /* Light mode (default) */
+  /* Expense envelope colors (negative = overspent = bad) */
+  .expense-overspent { background-color: #ffebee !important; }
+  .expense-overspent td:last-child { color: #c62828 !important; font-weight: bold; }
+  .expense-ok { background-color: #e8f5e9 !important; }
+  .expense-ok td:last-child { color: #2e7d32 !important; }
+  .expense-warning { background-color: #fff8e1 !important; }
+  .expense-warning td:last-child { color: #f57f17 !important; }
+
+  /* Asset envelope colors (negative = money out/owed to you = neutral) */
+  .asset-negative { background-color: #e3f2fd !important; }
+  .asset-negative td:last-child { color: #1565c0 !important; }
+  .asset-positive { background-color: #e8f5e9 !important; }
+  .asset-positive td:last-child { color: #2e7d32 !important; }
+  .asset-zero { background-color: #fafafa !important; }
+
+  /* Liability colors (negative = you owe = expected) */
+  .liability-negative { background-color: #fff8e1 !important; }
+  .liability-negative td:last-child { color: #f57f17 !important; }
+  .liability-positive { background-color: #e8f5e9 !important; }
+  .liability-positive td:last-child { color: #2e7d32 !important; }
+
+  /* Income summary colors - row backgrounds */
+  .income-positive { background-color: #e8f5e9 !important; }
+  .income-positive td { color: #2e7d32 !important; font-weight: bold; }
+  .income-negative { background-color: #ffebee !important; }
+  .income-negative td { color: #c62828 !important; font-weight: bold; }
+  .income-mixed { background-color: #ffebee !important; }
+  .income-mixed td { font-weight: bold; }
+  .income-zero { background-color: #fff8e1 !important; }
+  .income-zero td { color: #f57f17 !important; }
+
+  /* Individual amount colors within income rows */
+  .amount-positive { color: #2e7d32 !important; }
+  .amount-negative { color: #c62828 !important; }
+
+  /* Scheduled transaction indicator - styled like Fava tags */
+  .scheduled-indicator {
+    margin-left: 6px;
+    padding: 1px 5px;
+    font-size: 0.8em;
+    font-weight: normal;
+    color: #5c6bc0;
+    background-color: #e8eaf6;
+    border-radius: 3px;
+    cursor: help;
+  }
+
+  /* Stats page styles */
+  .stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 16px;
+    border-left: 4px solid #1976d2;
+  }
+
+  .stat-card.positive {
+    border-left-color: #2e7d32;
+  }
+
+  .stat-card.warning {
+    border-left-color: #f57f17;
+  }
+
+  .stat-card.negative {
+    border-left-color: #c62828;
+  }
+
+  .stat-label {
+    font-size: 0.85em;
+    color: #666;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .stat-value.positive {
+    color: #2e7d32;
+  }
+
+  .stat-value.warning {
+    color: #f57f17;
+  }
+
+  .stat-value.negative {
+    color: #c62828;
+  }
+
+  .envelope-list {
+    margin: 8px 0;
+    padding-left: 20px;
+    font-size: 0.9em;
+  }
+
+  .envelope-list li {
+    margin: 4px 0;
+  }
+
+  .section-header {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 24px 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #1976d2;
+  }
+
+  /* Stats table row coloring based on adherence rate */
+  .stats-excellent { background-color: #e8f5e9 !important; }
+  .stats-excellent td:nth-child(5) { color: #2e7d32 !important; font-weight: bold; }
+
+  .stats-good { background-color: #f1f8e9 !important; }
+  .stats-good td:nth-child(5) { color: #558b2f !important; }
+
+  .stats-warning { background-color: #fff8e1 !important; }
+  .stats-warning td:nth-child(5) { color: #f57f17 !important; }
+
+  .stats-poor { background-color: #ffebee !important; }
+  .stats-poor td:nth-child(5) { color: #c62828 !important; font-weight: bold; }
+
+  /* Dark mode */
+  @media (prefers-color-scheme: dark) {
+    /* Expense envelope colors (negative = overspent = bad) */
+    .expense-overspent { background-color: #4a1c1c !important; }
+    .expense-overspent td:last-child { color: #ef9a9a !important; }
+    .expense-ok { background-color: #1b3d1b !important; }
+    .expense-ok td:last-child { color: #a5d6a7 !important; }
+    .expense-warning { background-color: #3d3518 !important; }
+    .expense-warning td:last-child { color: #ffd54f !important; }
+
+    /* Asset envelope colors (negative = money out/owed to you = neutral) */
+    .asset-negative { background-color: #1a2e4a !important; }
+    .asset-negative td:last-child { color: #90caf9 !important; }
+    .asset-positive { background-color: #1b3d1b !important; }
+    .asset-positive td:last-child { color: #a5d6a7 !important; }
+    .asset-zero { background-color: #2a2a2a !important; }
+
+    /* Liability colors (negative = you owe = expected) */
+    .liability-negative { background-color: #3d3518 !important; }
+    .liability-negative td:last-child { color: #ffd54f !important; }
+    .liability-positive { background-color: #1b3d1b !important; }
+    .liability-positive td:last-child { color: #a5d6a7 !important; }
+
+    /* Income summary colors */
+    .income-positive { background-color: #1b3d1b !important; }
+    .income-positive td { color: #a5d6a7 !important; }
+    .income-negative { background-color: #4a1c1c !important; }
+    .income-negative td { color: #ef9a9a !important; }
+    .income-mixed { background-color: #4a1c1c !important; }
+    .income-mixed td { font-weight: bold; }
+    .income-zero { background-color: #3d3518 !important; }
+    .income-zero td { color: #ffd54f !important; }
+
+    /* Individual amount colors within income rows */
+    .amount-positive { color: #a5d6a7 !important; }
+    .amount-negative { color: #ef9a9a !important; }
+
+    /* Scheduled transaction indicator */
+    .scheduled-indicator {
+      color: #b39ddb;
+      background-color: #311b59;
+    }
+
+    /* Stats page dark mode */
+    .stat-card {
+      background: #2a2a2a;
+    }
+
+    .stat-label {
+      color: #aaa;
+    }
+
+    .stat-value {
+      color: #eee;
+    }
+
+    .stat-value.positive {
+      color: #a5d6a7;
+    }
+
+    .stat-value.warning {
+      color: #ffd54f;
+    }
+
+    .stat-value.negative {
+      color: #ef9a9a;
+    }
+
+    .stats-excellent { background-color: #1b3d1b !important; }
+    .stats-excellent td:nth-child(5) { color: #a5d6a7 !important; }
+
+    .stats-good { background-color: #263d1b !important; }
+    .stats-good td:nth-child(5) { color: #c5e1a5 !important; }
+
+    .stats-warning { background-color: #3d3518 !important; }
+    .stats-warning td:nth-child(5) { color: #ffd54f !important; }
+
+    .stats-poor { background-color: #4a1c1c !important; }
+    .stats-poor td:nth-child(5) { color: #ef9a9a !important; }
+  }
+</style>
+
+{# Get view mode and currency #}
+{% set view = request.args.get('view', 'budget') %}
 {% set currency = request.args.get('currency') %}
-{% if currency == None%}
-{% set currency = extension.get_currencies()[0]%}
+{% if currency == None %}
+{% set currency = extension.get_currencies()[0] %}
 {% endif %}
+
+{% if view == 'stats' %}
+{# ==================== STATS VIEW ==================== #}
+
+{% set overall = extension.generate_overall_stats(currency) %}
+{% set stats_table = extension.generate_stats_table(currency) %}
+
+<div class="headerline">
+  <h3><b><a href="{{ url_for('extension_report', extension_name='EnvelopeBudget', currency=currency) }}">Budget</a></b></h3>
+  <h3><b>Stats</b></h3>
+  {% if extension.get_currencies() %}
+  {% for c in extension.get_currencies() %}
+  {% if not (currency == c) %}
+  <h3><b><a href="{{ url_for('extension_report', extension_name='EnvelopeBudget', view='stats', currency=c) }}">Stats {{ c }}</a></b></h3>
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+</div>
+
+<h2>Envelope Budget Statistics ({{ currency }})</h2>
+<p>Statistics calculated for {{ overall.total_periods }} periods up to current month.</p>
+
+<div class="section-header">Overall Summary</div>
+
+<div class="stats-summary">
+  <div class="stat-card positive">
+    <div class="stat-label">Total Periods Tracked</div>
+    <div class="stat-value">{{ overall.total_periods }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Total Income</div>
+    <div class="stat-value">{{ "{:,.2f}".format(overall.total_income) }} {{ currency }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Avg Monthly Income</div>
+    <div class="stat-value">{{ "{:,.2f}".format(overall.avg_income_per_month) }} {{ currency }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Total Budgeted</div>
+    <div class="stat-value">{{ "{:,.2f}".format(overall.total_budgeted) }} {{ currency }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Total Spent</div>
+    <div class="stat-value">{{ "{:,.2f}".format(overall.total_spent) }} {{ currency }}</div>
+  </div>
+
+  {% set adherence_class = 'positive' if overall.overall_adherence_rate >= 80 else ('warning' if overall.overall_adherence_rate >= 60 else 'negative') %}
+  <div class="stat-card {{ adherence_class }}">
+    <div class="stat-label">Overall Budget Adherence</div>
+    <div class="stat-value {{ adherence_class }}">{{ "{:.1f}".format(overall.overall_adherence_rate) }}%</div>
+  </div>
+</div>
+
+{% if overall.envelopes_usually_under %}
+<div class="section-header" style="border-left-color: #2e7d32;">Well-Managed Envelopes (>80% adherence)</div>
+<ul class="envelope-list">
+  {% for env in overall.envelopes_usually_under %}
+  <li>{{ env }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if overall.envelopes_often_over %}
+<div class="section-header" style="border-left-color: #c62828;">Needs Attention (&lt;50% adherence)</div>
+<ul class="envelope-list">
+  {% for env in overall.envelopes_often_over %}
+  <li>{{ env }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<div class="section-header">Detailed Envelope Statistics</div>
+
+{% if stats_table[1] %}
+<table is="sortable-table" class="queryresults">
+  <thead>
+    <tr>
+      {% for name, type in stats_table[0] %}
+      <th data-sort="string">{{ name }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in stats_table[1] %}
+    {% set adherence_str = row['Adherence %']|replace('%', '')|float %}
+    {% set row_class = 'stats-excellent' if adherence_str >= 90 else ('stats-good' if adherence_str >= 70 else ('stats-warning' if adherence_str >= 50 else 'stats-poor')) %}
+    <tr class="{{ row_class }}">
+      {% for name, type in stats_table[0] %}
+      <td>{{ row[name] }}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No envelope data available for statistics.</p>
+{% endif %}
+
+{% else %}
+{# ==================== BUDGET VIEW (default) ==================== #}
+
 {% if extension.check_month_in_available_months(request.args.get('month'),currency) %}
 {% set month = request.args.get('month') %}
 {% endif %}
-{% if not month%}
-{% set month = extension.get_budgets_months_available(currency)[-1] %}
+{% if not month %}
+{# Default to current month if available, otherwise last available month #}
+{% set current_month = extension.get_current_month() %}
+{% set available_months = extension.get_budgets_months_available(currency) %}
+{% if current_month in available_months %}
+{% set month = current_month %}
+{% else %}
+{% set month = available_months[-1] %}
+{% endif %}
 {% endif %}
 {% if extension.get_currencies() %}
 <div class="headerline">
@@ -29,6 +356,7 @@
         href="{{ url_for('extension_report', extension_name='EnvelopeBudget', month=m,currency=currency) }}">{{ m
         }}</a>{% else %} {{ m }}{% endif %}</b></h3>
   {% endfor %}
+  <h3><b><a href="{{ url_for('extension_report', extension_name='EnvelopeBudget', view='stats', currency=currency) }}">Stats</a></b></h3>
 </div>
 <h3>{{ month }}</h3>
 
@@ -37,3 +365,5 @@
 
 {% set envelope_table = extension.generate_envelope_query_tables(month) %}
 {{ querytable.querytable(ledger, None, envelope_table[0], envelope_table[1]) }}
+
+{% endif %}

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026.02.09 (fava-envelope-airmail)
+* **Budget Statistics Page**: New Stats view with overall summary cards (income, spending, adherence rate) and per-envelope statistics (period counts, averages, standard deviation, adherence %).
+* **Scheduled Transaction Tracking**: X-flagged transactions are tracked per envelope and displayed as badges showing count and total.
+* **Account Ignore Directive**: New `ignore` directive to exclude accounts (e.g., taxes, 401k) from budgeting by treating them as income deductions.
+* **Color-Coded Budget Table**: Rows colored by account type and budget status (green/yellow/red for expenses, blue for assets), with dark mode support.
+* **Income Row Coloring**: "To be budgeted" row highlighted based on surplus/deficit status, with per-amount positive/negative coloring.
+* Envelopes are now sorted alphabetically.
+* Default month view is the current month instead of last available.
+* Redundant "Amount" column hidden when only one currency is configured.
+* Rolled-over allowance column shows positive/negative coloring.
+
 ## Upcoming
 * Envelopes with no activity or balance no longer show up in the list.
 * Envelopes now link to their activity breakdown.

@@ -124,6 +124,17 @@ class Mapping(_BaseEnvelopeDirective):
         )
 
 
+class Ignore(_BaseEnvelopeDirective):
+    """Directive to ignore certain accounts from envelope budgeting."""
+    pattern: re.Pattern
+
+    def __init__(self, directive: Custom):
+        super().__init__(directive)
+        (self.pattern,) = _cast_values(
+            directive.values, (re.Pattern,), directive.meta
+        )
+
+
 budget_directive_types: list[type[_BaseEnvelopeDirective]] = [
     Allocate,
     AllocateFill,

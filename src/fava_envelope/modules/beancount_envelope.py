@@ -47,6 +47,8 @@ class BeancountEnvelope:
         YearMonth,
         Income,
     ]
+    # Track X-flagged (scheduled/future) transactions: (account, month) -> (count, total_inventory)
+    scheduled_transactions: defaultdict[Account, defaultdict[YearMonth, tuple[int, Inventory]]]
 
     price_map: prices.PriceMap
 
@@ -115,6 +117,7 @@ class BeancountEnvelope:
         months_ahead = 0
         operating_currencies: list[str] = []
         self.include_starting_balance = True
+        self.ignore_accounts: list[re.Pattern] = []
 
         for e in self.entries:
             if (
@@ -132,6 +135,10 @@ class BeancountEnvelope:
                     e, directive.Mapping, self.etype, self.errors
                 ):
                     mappings.append((e_parsed.pattern, e_parsed.account))
+                if e_parsed := directive.parse_directive_as(
+                    e, directive.Ignore, self.etype, self.errors
+                ):
+                    self.ignore_accounts.append(e_parsed.pattern)
                 if e.values[0].value == "income account":
                     income_accounts.append(re.compile(e.values[1].value))
                 if e.values[0].value == "currency":
@@ -194,6 +201,7 @@ class BeancountEnvelope:
 
         self.income_df = defaultdict(Income)
         self.envelope_df = defaultdict(lambda: defaultdict(Envelope))
+        self.scheduled_transactions: defaultdict[Account, defaultdict[YearMonth, list]] = defaultdict(lambda: defaultdict(list))
 
         self._calculate_budget_activity()
         self._calc_budget_budgeted()
@@ -351,7 +359,12 @@ class BeancountEnvelope:
                         posting.meta,
                     )
 
-                if any(regexp.match(account) for regexp in self.income_accounts):
+                # Ignored accounts reduce available income (e.g., taxes, 401k contributions)
+                # Instead of skipping, treat them as income deductions
+                if any(regexp.match(account) for regexp in self.ignore_accounts):
+                    account = "Income"  # Adds as positive, reducing net income
+
+                elif any(regexp.match(account) for regexp in self.income_accounts):
                     account = "Income"
                 elif any(
                     regexp.match(posting.account) for regexp in self.budget_accounts
@@ -359,6 +372,10 @@ class BeancountEnvelope:
                     # These accounts are in the budget. We look at the remaining
                     # accounts to know where the moeny went.
                     continue
+
+                # Track X-flagged (scheduled/future) transactions for envelope accounts
+                if entry.flag == "X" and account != "Income":
+                    self.scheduled_transactions[account][month].append(posting)
 
                 balances[account][month].add_position(posting)
 

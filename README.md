@@ -1,77 +1,123 @@
-# fava-envelope
+# fava-envelope-airmail
 
-## memst/fava-envelope
+A fork of [memst/fava-envelope](https://github.com/memst/fava-envelope) (itself a fork of [polarmutex/fava-envelope](https://github.com/polarmutex/fava-envelope)) that adds several enhancements for envelope budgeting in [Fava](https://github.com/beancount/fava)/[Beancount](https://github.com/beancount/beancount).
 
-[![Run on Repl.it](https://repl.it/badge/github/memst/fava-envelope)](https://repl.it/github/memst/fava-envelope)
-_(clicking this replit link should let you create an actually working repl)_
+I'm open to merging these changes upstream, but the original repos haven't seen much merge activity lately, so I decided to publish this fork separately in case anyone else finds the enhancements useful.
 
-This is a fork of [polarmutex/fava-envelope](https://github.com/polarmutex/fava-envelope) with a few changes, most notably:
-- Removing pandas dependency (while making things faster)
-- Caching envelope results until source files are changed
-- Addition of multi-currency support
-- Simplification existing budgeting table
-- Chaged directive parsing to use ACCOUNT instead of STRING where appropriate
-- New directives for better control of the extension's behaviour
+## What's New in This Fork
 
-Please check out the [changelog](https://github.com/memst/fava-envelope/blob/master/CHANGELOG.md) for a bit more details about what changed.
+### Budget Statistics Page
+A new **Stats** view accessible from the budget page header that provides:
+- Overall summary cards: total periods tracked, total/average income, total budgeted vs. spent, and overall budget adherence rate
+- Per-envelope statistics: period counts, under/over budget breakdowns, adherence percentages, average activity, and standard deviation
+- Categorization of envelopes into "Well-Managed" (>80% adherence) and "Needs Attention" (<50% adherence)
+- Color-coded stats table rows by adherence rate
 
-The syntax highlighting of this extension is supported in Sublime Text text editor by [my fork of norseghost/sublime-beancount](https://github.com/memst/sublime-beancount).
+### Scheduled Transaction Tracking
+- Transactions flagged with `X` (e.g., upcoming/scheduled bills) are now tracked per envelope
+- A badge appears next to envelope names showing the count and total of scheduled transactions for that month (e.g., `2X`)
 
-Please raise any issues if you confused about installation or usage. I'd be happy to help.
-
-## Installation
-Clone the repo and install it:
-```bash
-git clone https://github.com/memst/fava-envelope.git
-python -m pip install -e fava-envelope
+### Account Ignore Directive
+A new `ignore` directive to exclude accounts from envelope budgeting (e.g., taxes, 401k contributions). Ignored accounts are treated as income deductions rather than being completely skipped:
+```
+2020-01-01 custom "envelope" "ignore" "Expenses:Taxes:.*"
 ```
 
-## Running fava-envelope
+### Color-Coded Budget Table
+- Envelope rows are color-coded based on account type and available balance:
+  - **Expenses**: green (under budget), yellow (exactly zero), red (overspent)
+  - **Assets**: blue (negative/receivable), green (positive)
+  - **Liabilities**: treated like expenses
+- Income "To be budgeted" row is color-coded: green (surplus), red (deficit), yellow (zero)
+- Individual amounts within rows show positive/negative coloring
+- Full dark mode support
+
+### Other Improvements
+- Envelopes are now sorted alphabetically
+- Default month view is the current month (instead of the last available month)
+- Redundant "Amount" column is hidden when only one currency is configured
+- Rolled-over allowance column shows positive/negative coloring
+
+## Inherited Features (from memst/fava-envelope)
+
+- No pandas dependency (faster)
+- Cached envelope results until source files change
+- Multi-currency support
+- Simplified budgeting table
+- Proper `ACCOUNT` types in directive parsing
+- Advanced directives: `allocate fill`, `income override`, `allow negative rollover`, `include starting balance`, `repeat-until` metadata
+
+Please check the [changelog](https://github.com/stenius/fava-envelope-airmail/blob/master/CHANGELOG.md) for full details.
+
+## Installation
+
+### From PyPI
+
+```bash
+pip install fava-envelope-airmail
+```
+
+### From Source
+
+```bash
+git clone https://github.com/stenius/fava-envelope-airmail.git
+cd fava-envelope-airmail
+pip install -e .
+```
+
+## Usage
 
 ### Load the Extension
-Add this to your beancount journal, and start fava as normal
+Add this to your beancount journal, and start fava as normal:
 ```
 2000-01-01 custom "fava-extension" "fava_envelope" "{}"
 ```
 
-You should now see 'Envelope' in your fava window. You must set up a budget (see below), or else Fava will report a 404 error.
+You should now see 'Envelope' in your fava sidebar. You must set up a budget (see below), or Fava will report a 404 error.
 
-### Setting up budget
+### Setting Up a Budget
 
-### Set the budget start date
-start date in the format <4 digit year>-<2 digit month>
+#### Start date
 ```
 2020-01-01 custom "envelope" "start date" "2020-01"
 ```
 
-### Budget months ahead
-If you want to see future months (to budget ahead), set this parameter
+#### Budget months ahead
+Show future months for budgeting ahead (default is 0):
 ```
 2020-01-01 custom "envelope" "months ahead" "2"
 ```
-The default is 0
 
-### Set up Budget Accounts
-You will need to specify the Assets and Liabilities you want included in your budget (For example ignoring Investment accounts). you can use regular expression in these statements
+#### Budget accounts
+Specify the Assets and Liabilities included in your budget (supports regex):
 ```
 2020-01-01 custom "envelope" "budget account" "Assets:Checking"
-2020-01-01 custom "envelope" "budget account" "Liabilities:Credit-Cards:*"
+2020-01-01 custom "envelope" "budget account" "Liabilities:Credit-Cards:.*"
 ```
 
-### Set up mappings
-By default fava-envelope will use the Assets/Liabilities/Income/Expenses buckets that are not listed in the budget accounts. this directive allows you to map them to another bucket
+#### Mappings
+Map sub-accounts to a parent envelope:
 ```
-2020-01-01 custom "envelope" "mapping" "Expenses:Food:*" "Expenses:Food"
-```
-
-### Allocate money to a bucket
-```
-2020-01-31 custom "envelope" "allocate" "Expenses:Food" 100.00
+2020-01-01 custom "envelope" "mapping" "Expenses:Food:.*" Expenses:Food
 ```
 
-### Set up operating currency
-The envelopes will read the operating currency from the core beancount option.
+#### Ignore accounts
+Exclude accounts from budgeting (e.g., taxes deducted from paychecks):
+```
+2020-01-01 custom "envelope" "ignore" "Expenses:Taxes:.*"
+```
+
+#### Allocate money to an envelope
+```
+2020-01-31 custom "envelope" "allocate" Expenses:Food 100.00 USD
+```
+
+#### Operating currency
+The extension reads the operating currency from beancount options (defaults to USD):
 ```
 option "operating_currency" "EUR"
 ```
-It will default to USD if this option is not set. Only a single currency is supported for the budget.
+
+## License
+
+MIT

@@ -1,13 +1,24 @@
 {% import '_query_table.html' as fava_querytable %}
+{% import 'macros/_commodity_macros.html' as commodity_macros %}
 
 {% set sort_type = fava_querytable.sort_type %}
 
-{% macro querycell(ledger, name, value, type_) %}
+{% macro querycell(ledger, name, value, type_, color_amounts=false, color_rollover=false) %}
 {% set type = type_|string %}
 {% if type == "<class 'fava_envelope.modules.envelope_link.EnvelopeLink'>" %}
 <td><a href="{{ extension.extra_escape(url_for('account', name='Expenses', time=value.year_month, account=value.linked_accounts))  }}">
-  {{- value.name -}}
-</a></td>
+  {{- value.name -}}</a>{% if value.has_scheduled %}<span class="scheduled-indicator" title="{{ value.scheduled_count }} scheduled {{ value.scheduled_total }}">{{ value.scheduled_count }}X</span>{% endif %}
+</td>
+{% elif type == "<class 'beancount.core.inventory.Inventory'>" and (color_amounts or color_rollover) %}
+<td class="num">
+  {% for position in value|sort(attribute='units.currency') %}
+    {% if position.units.number < 0 %}
+    <span class="num amount-negative" title="{{ position.units.currency }}">{{ commodity_macros.render_amount(ledger, position.units) }}</span><br>
+    {% else %}
+    <span class="num{% if color_amounts %} amount-positive{% endif %}" title="{{ position.units.currency }}">{{ commodity_macros.render_amount(ledger, position.units) }}</span><br>
+    {% endif %}
+  {% endfor %}
+</td>
 {% else %}
 {{ fava_querytable.querycell(ledger, name, value, type_) }}
 {% endif %}
@@ -27,9 +38,92 @@
   </thead>
   <tbody>
     {% for row in rows if filter_empty == None or not row[filter_empty].is_empty() %}
-    <tr>
+    {% set row_class = '' %}
+
+    {# Envelope table - color by Available column and account type #}
+    {% set available = row.get('Available') %}
+    {% set envelope = row.get('Envelope') %}
+    {% if available is not none and envelope is not none %}
+      {% set avail_str = available|string %}
+      {% set envelope_name = envelope.name|default('') %}
+      {% set is_negative = '-' in avail_str and avail_str != '()' %}
+      {# Check for zero: empty inventory "()" or starts with "0.00 " (avoid matching 100.00, 800.00, etc.) #}
+      {% set is_zero = avail_str == '()' or avail_str.startswith('0.00 ') or avail_str == '0.00' %}
+
+      {% if envelope_name.startswith('Expenses:') %}
+        {# Expenses: negative = overspent (bad), positive = under budget (good) #}
+        {% if is_negative %}
+          {% set row_class = 'expense-overspent' %}
+        {% elif is_zero %}
+          {% set row_class = 'expense-warning' %}
+        {% else %}
+          {% set row_class = 'expense-ok' %}
+        {% endif %}
+      {% elif envelope_name.startswith('Assets:') %}
+        {# Assets: negative = money out/receivable (neutral blue), positive = received (good) #}
+        {% if is_negative %}
+          {% set row_class = 'asset-negative' %}
+        {% elif is_zero %}
+          {% set row_class = 'asset-zero' %}
+        {% else %}
+          {% set row_class = 'asset-positive' %}
+        {% endif %}
+      {% elif envelope_name.startswith('Liabilities:') %}
+        {# Liabilities: treat like expenses - negative = overspent, zero = warning, positive = ok #}
+        {% if is_negative %}
+          {% set row_class = 'expense-overspent' %}
+        {% elif is_zero %}
+          {% set row_class = 'expense-warning' %}
+        {% else %}
+          {% set row_class = 'expense-ok' %}
+        {% endif %}
+      {% else %}
+        {# Default: treat like expenses #}
+        {% if is_negative %}
+          {% set row_class = 'expense-overspent' %}
+        {% elif is_zero %}
+          {% set row_class = 'expense-warning' %}
+        {% else %}
+          {% set row_class = 'expense-ok' %}
+        {% endif %}
+      {% endif %}
+    {% endif %}
+
+    {# Income table - color "To be budgeted" row #}
+    {% set row_name = row.get('Name') %}
+    {% set is_to_be_budgeted = row_name == 'To be budgeted for month' %}
+    {% if is_to_be_budgeted %}
+      {# Find the amount column (could be "Amount" or "Amount (USD)" etc.) #}
+      {% set ns = namespace(amount=none, has_positive=false, has_negative=false) %}
+      {% for key, val in row.items() if key != 'Name' and ns.amount is none %}
+        {% set ns.amount = val %}
+      {% endfor %}
+      {# Check each position in the Inventory for positive/negative #}
+      {% if ns.amount is not none and ns.amount is iterable %}
+        {% for position in ns.amount %}
+          {% if position.units.number < 0 %}
+            {% set ns.has_negative = true %}
+          {% elif position.units.number > 0 %}
+            {% set ns.has_positive = true %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
+      {% set amount_str = ns.amount|string if ns.amount is not none else '' %}
+      {% if amount_str == '()' or (not ns.has_positive and not ns.has_negative) %}
+        {% set row_class = 'income-zero' %}
+      {% elif ns.has_negative and ns.has_positive %}
+        {# Mixed: some currencies positive, some negative - red background but colored amounts #}
+        {% set row_class = 'income-mixed' %}
+      {% elif ns.has_negative %}
+        {% set row_class = 'income-negative' %}
+      {% else %}
+        {% set row_class = 'income-positive' %}
+      {% endif %}
+    {% endif %}
+
+    <tr class="{{ row_class }}">
       {% for name, type in types %}
-      {{ querycell(ledger, name, row[name], type)  }}
+      {{ querycell(ledger, name, row[name], type, color_amounts=is_to_be_budgeted, color_rollover=(name == 'Rolled over Allowence')) }}
       {% endfor %}
     </tr>
     {% endfor %}

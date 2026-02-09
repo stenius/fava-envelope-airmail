@@ -1,12 +1,13 @@
 [project]
-name = "memst-fava-envelope"
-version = "2025.01.11"
-description = ""
+name = "fava-envelope-airmail"
+version = "2026.02.09"
+description = "Envelope budgeting for Fava/Beancount with stats, scheduled transactions, and color-coded UI"
 readme = "README.md"
-keywords = ["fava", "budget", "envelope"]
+keywords = ["fava", "budget", "envelope", "beancount", "personal-finance"]
 authors = [
   {email = "me@brianryall.xyz", name = "Brian Ryall"},
   {name = "memst"},
+  {name = "pauls"},
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -38,10 +39,10 @@ includes = ["src/fava_envelope"]
 editable-backend = "path"
 
 [project.urls]
-homepage = "https://github.com/polarmutex/fava-envelope"
-documentation = "https://github.com/polarmutex/fava-envelope"
-repository = "https://github.com/polarmutex/fava-envelope"
-changelog = "https://github.com/polarmutex/fava-envelope/master/CHANGELOG.md"
+homepage = "https://github.com/stenius/fava-envelope-airmail"
+documentation = "https://github.com/stenius/fava-envelope-airmail"
+repository = "https://github.com/stenius/fava-envelope-airmail"
+changelog = "https://github.com/stenius/fava-envelope-airmail/blob/master/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
