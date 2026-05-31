@@ -123,7 +123,7 @@
 
     <tr class="{{ row_class }}">
       {% for name, type in types %}
-      {{ querycell(ledger, name, row[name], type, color_amounts=is_to_be_budgeted, color_rollover=(name == 'Rolled over Allowence')) }}
+      {{ querycell(ledger, name, row[name], type, color_amounts=is_to_be_budgeted, color_rollover=(name == 'Rolled-over Allowance')) }}
       {% endfor %}
     </tr>
     {% endfor %}
