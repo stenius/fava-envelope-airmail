@@ -50,6 +50,11 @@
     cursor: help;
   }
 
+  /* Currently displayed month in the month link list (Fava sets h3 to 500) */
+  .current-month {
+    font-weight: 700;
+  }
+
   /* Stats page styles */
   .stats-summary {
     display: grid;
@@ -352,11 +357,11 @@
 
 <div class="headerline">
   {% for m in extension.get_budgets_months_available(currency) %}
-  <h3><b>{% if not (module == m) %}<a
+  <h3>{% if month == m %}<span class="current-month">{{ m }}</span>{% else %}<a
         href="{{ url_for('extension_report', extension_name='EnvelopeBudget', month=m,currency=currency) }}">{{ m
-        }}</a>{% else %} {{ m }}{% endif %}</b></h3>
+        }}</a>{% endif %}</h3>
   {% endfor %}
-  <h3><b><a href="{{ url_for('extension_report', extension_name='EnvelopeBudget', view='stats', currency=currency) }}">Stats</a></b></h3>
+  <h3><a href="{{ url_for('extension_report', extension_name='EnvelopeBudget', view='stats', currency=currency) }}">Stats</a></h3>
 </div>
 <h3>{{ month }}</h3>
 
