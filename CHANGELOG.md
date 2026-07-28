@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026.07.28
+* The month currently being viewed is now bolded in the month link list instead of rendering as a link. Previously the active month was compared against an undefined `module` variable, so no month was ever highlighted.
+
 ## 2026.02.09 (fava-envelope-airmail)
 * **Budget Statistics Page**: New Stats view with overall summary cards (income, spending, adherence rate) and per-envelope statistics (period counts, averages, standard deviation, adherence %).
 * **Scheduled Transaction Tracking**: X-flagged transactions are tracked per envelope and displayed as badges showing count and total.

@@ -1,6 +1,6 @@
 [project]
 name = "fava-envelope-airmail"
-version = "2026.02.09"
+version = "2026.07.28"
 description = "Envelope budgeting for Fava/Beancount with stats, scheduled transactions, and color-coded UI"
 readme = "README.md"
 keywords = ["fava", "budget", "envelope", "beancount", "personal-finance"]
