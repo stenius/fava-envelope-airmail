@@ -168,7 +168,7 @@ class EnvelopeBudget(FavaExtensionBase):
     def generate_envelope_query_tables(self, month_str: str):
         envelope_table_types = []
         envelope_table_types.append(("Envelope", str(EnvelopeLink)))
-        envelope_table_types.append(("Rolled over Allowence", str(Inventory)))
+        envelope_table_types.append(("Rolled-over Allowance", str(Inventory)))
         envelope_table_types.append(("Budgeted", str(Inventory)))
         envelope_table_types.append(("Activity", str(Inventory)))
         envelope_table_types.append(("Available", str(Inventory)))
@@ -195,7 +195,7 @@ class EnvelopeBudget(FavaExtensionBase):
                     )
                     scheduled_total = str(-total_inv)  # Negate to show as positive expense
                 row["Envelope"] = EnvelopeLink(envelope_name, month_str, self.envelope_to_accounts[envelope_name], scheduled_count, scheduled_total)
-                row["Rolled over Allowence"] = e_row[month.prev_month()].available
+                row["Rolled-over Allowance"] = e_row[month.prev_month()].available
                 row["Budgeted"] = e_row[month].budgeted
                 row["Activity"] = e_row[month].activity
                 row["Available"] = e_row[month].available
