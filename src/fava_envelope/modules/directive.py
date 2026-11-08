@@ -70,7 +70,9 @@ def _cast_values(values: list[ValueType], classes: tuple, meta: Meta):
             value = re.compile(value)
             dtype = re.Pattern
 
-        if dtype is not cls:
+        # Not `is not`: beancount.core.account.TYPE is a string, and it comes back
+        # from beancount's pickle cache equal but not identical.
+        if dtype != cls:
             raise DirectiveValidationError(
                 meta,
                 f"expected argument {i+1} ({value}) to be of type {cls}, got {dtype}",
